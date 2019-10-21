@@ -1,0 +1,138 @@
+---
+title: "MA615_Midterm_Project"
+author: "Yiping Jiang"
+date: "10/20/2019"
+output: pdf_document
+---
+
+# Indicators:  
+
+**GNI per capita (Atlas $): **   
+It is the gross national income, converted to U.S. dollars using the World Bank Atlas method, divided by the midyear population. GNI is the sum of value added by all resident producers plus any product taxes (less subsidies) not included in the valuation of output plus net receipts of primary income (compensation of employees and property income) from abroad.  
+  
+**Access to electricity (% of population): **   
+It is the percentage of population with access to electricity. Electrification data are collected from industry, national surveys and international sources.  
+  
+**Urban population (% of total population): **   
+It refers to people living in urban areas as defined by national statistical offices. The data are collected and smoothed by United Nations Population Division.
+  
+# **Research Question: **  
+Is there a correlation between GNI per capita and access to electricity? How strond is the correlation?  
+And how about GNI per capita and urban population? How strong the correlation is?  
+  
+```{r setup, echo = F, include = F}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(WDI)
+```
+  
+# 1. Get Data  
+\qquad First we search and load updated lists of inidicators: GNI per capita, access to electricity and urban population.
+
+```{r echo = T, include = F}
+new_wdi_cache <- WDIcache()
+WDIsearch("Access to electricity")
+WDIsearch("Urban population")
+WDIsearch("gdp.*capita.*US\\$", cache = new_wdi_cache)
+```
+  
+# 2. Clean Up 
+\qquad First we assign a dataframe with combining the three indicators, and then we select their corresponding data and assign to each indicator name; next we use na.omit to returns the non-missing value objects to clean the raw data.
+
+```{r}
+wdi_data <- WDI(indicator = c("NY.GNP.PCAP.CD","EG.ELC.ACCS.ZS","SP.URB.TOTL.IN.ZS"), 
+                start = 1960, end = 2019, extra = TRUE)
+names(wdi_data)
+wdi_data <- subset(wdi_data, region != "Aggregates")
+names(wdi_data)[which(names(wdi_data) == "NY.GNP.PCAP.CD")] <- "GNI"
+names(wdi_data)[which(names(wdi_data) == "EG.ELC.ACCS.ZS")] <- "Electricity"
+names(wdi_data)[which(names(wdi_data) == "SP.URB.TOTL.IN.ZS")] <- "Urban_Population"
+data = na.omit(wdi_data)
+names(data)
+```
+
+# 3. Plot Graphs
+\qquad Observe the summary and distribution of these three indicators: the mode of GNI concentrates in 0 to 10,000; the mode of Electricity concentrates in 90 to 100; and the distribution of Urban Population looks comparatively more average than the other two.
+
+```{r}
+pt1 = ggplot(data, aes(x = GNI)) +
+  geom_histogram(bins = 100, fill="blue")
+summary(data$GNI)
+
+pt2 = ggplot(data, aes(x = Electricity)) +
+  geom_histogram(bins = 20, fill="purple")
+summary(data$Electricity)
+
+pt3 = ggplot(data, aes(x = Urban_Population)) +
+  geom_histogram(bins = 20, fill="darkgreen")
+summary(data$Urban_Population)
+
+gridExtra::grid.arrange(pt1, pt2, pt3, ncol= 3)
+```
+  
+* Data Transformation  
+\qquad Using the Pipes, group_by and summarize functions to transform the dataframe into a table that only contains the mean of the three indicators in each year from 1990 to 2017. We can tell that from 1990 to 2003, both the Electricity and Urban Population decrease together with GNI; and then when GNI keep increasing from 2003 to 2013, the Electricity and Urban Population raise up as a result; while although the GNI decreases from 2014 to 2017, the Electricity and Urban Population still keep increasing.  
+  
+```{r}
+develop <- data %>% 
+  group_by(year) %>% 
+  summarize(Electricity = mean(Electricity), 
+            Urban_Population = mean(Urban_Population), 
+            GNI = mean(GNI))
+kable(develop, digits = 4, align = "c", 
+      booktabs = TRUE, caption = "Worldwide Development", 
+      col.names = c("Year", "Urban Population","Electricity","GNI" ))
+```
+
+* Scatter Plots  
+  
+```{r}
+### scatter plot of GNI per Capita:
+pt4 = ggplot(data, aes(x = year, y = GNI), title = "GNI") + 
+  geom_point(size = 0.1, color = "red") + 
+  scale_x_continuous("Year", breaks = seq(1990, 2017, 2)) + 
+  geom_smooth(color = "blue") 
+
+### scatter plot of Electricity:
+pt5 = ggplot(data, aes(x = year, y = Electricity), title = "Electricity") + 
+  geom_point(size = 0.1, color = "orange") + 
+  scale_x_continuous("Year", breaks = seq(1990, 2017, 2)) + 
+  geom_smooth(color = "green")  
+
+#scatter plot of Prevalence of Urban Population:
+pt6 = ggplot(data, aes(x = year, y = Urban_Population), title = "Urban_Population") +
+  geom_point(size = 0.1, color = "purple") + 
+  scale_x_continuous("Year", breaks = seq(1990, 2017, 2)) + 
+  geom_smooth(color = "black")  
+
+gridExtra::grid.arrange(pt4, pt5, pt6, ncol= 1)
+```
+  
+\qquad From the above scatter plots,from 1990 to 2017, we can see there is no obvious flunctuation from GNI (mean), while the maximum fluctuates from 50,000 to 125,000; 
+
+* Linear Regression & Correlation
+```{r}
+#plot Urban Population vs. GNI per Capita.
+pt8 = ggplot(data, aes(x = GNI, y = Urban_Population)) + 
+  geom_point(size = 1L, alpha = 0.5, colour = "#0c4c8a") + 
+  geom_smooth(color= "darkred", size = 0.5) 
+pt8
+```
+
+
+```{r}
+#plot Urban Population vs. GNI per Capita.
+ggplot(data, aes(x = GNI, y =Urban_Population)) + 
+  geom_point(size = 1L, alpha=0.5, colour = "#0c4c8a") + 
+  geom_smooth(color="darkred", size=0.5)  
+
+# square root scale of GNI
+ggplot(data) +
+  aes(x = GNI, y = Urban_Population) +
+  geom_point(size = 1L, colour = "#0c4c8a", alpha=0.5) +
+  scale_x_continuous(trans = "sqrt") +
+  theme_minimal() + 
+  geom_smooth(color = "darkred", size = 0.5)
+```
