@@ -4,11 +4,11 @@ author: "Yiping Jiang"
 date: "10/21/2019"
 output: ioslides_presentation
 ---
-
-# 0. EDA  
   
-## Indicators:  
-
+# Indicators:  
+  
+##  
+  
 **GNI per capita (Atlas $): **   
 It is the gross national income, converted to U.S. dollars using the World Bank Atlas method, divided by the midyear population.
   
@@ -32,20 +32,24 @@ library(WDI)
 ```
   
   
-# 1. Get Data  
+# Get Data  
   
-## HOW
-```{r echo = T, include = F}
+##    
+\qquad First we search and load updated lists of inidicators: GNI per capita, access to electricity and urban population.  
+  
+```{r include = F}
 new_wdi_cache <- WDIcache()
 WDIsearch("Access to electricity")
 WDIsearch("Urban population")
 WDIsearch("gdp.*capita.*US\\$", cache = new_wdi_cache)
 ```
   
-# 2. Clean Up  
+# Clean Up  
   
-##  Dataframe Combining & Data Cleaning  
-### ???
+## Dataframe Combining & Data Cleaning  
+  
+\qquad Next we assign a dataframe with combining the three indicators, and then we select their corresponding data and assign to each indicator name; next we use na.omit to returns the non-missing value objects to clean the raw data.  
+
 ```{r echo = F}
 wdi_data <- WDI(indicator = c("NY.GNP.PCAP.CD","EG.ELC.ACCS.ZS","SP.URB.TOTL.IN.ZS"), start = 1960, end = 2019, extra = TRUE)
 names(wdi_data)
@@ -57,7 +61,10 @@ data=na.omit(wdi_data)
 names(data)
 ```
 
-# 3. Plot Graphs
+# Plot Graphs
+  
+## 
+\qquad Observe the summary and distribution of these three indicators: the mode of GNI concentrates in 0 to 10,000; the mode of Electricity concentrates in 90 to 100; and the distribution of Urban Population looks comparatively more average than the other two.  
   
 ```{r echo = F, include = F}
 pt1 = ggplot(data, aes(x = GNI)) +
@@ -72,17 +79,22 @@ pt3 = ggplot(data, aes(x = Urban_Population)) +
   geom_histogram(bins = 20, fill="darkgreen")
 summary(data$Urban_Population)
 ```
-## ??
+  
 ```{r echo = F, include = T}
-gridExtra::grid.arrange(pt1, pt2, pt3, ncol= 3)
+gridExtra::grid.arrange(pt2, pt3, pt1, ncol= 3)
 ```
 
 ## Data Transformation  
+  
+\qquad Using the Pipes, group_by and summarize functions to transform the dataframe into a table that only contains the mean of the three indicators in each year from 1990 to 2017. We can tell that from 1990 to 2003, both the Electricity and Urban Population decrease together with GNI; and then when GNI keep increasing from 2003 to 2013, the Electricity and Urban Population raise up as a result; while although the GNI decreases from 2014 to 2017, the Electricity and Urban Population still keep increasing.  
+  
+##  
+  
 ```{r echo = F}
 develop <- data %>% 
   group_by(year) %>% 
   summarize(Electricity = mean(Electricity), Urban_Population = mean(Urban_Population), GNI = mean(GNI))
-kable(develop[1:5, ], digits = 4, align = "c", booktabs = TRUE, caption = "Worldwide Development", col.names = c("Year", "Urban Population","Electricity","GNI" ))
+kable(develop[1:15, ], digits = 4, align = "c", booktabs = TRUE, caption = "Worldwide Development", col.names = c("Year", "Urban Population","Electricity","GNI" ))
 ```
 
 ## Scatter Plots
@@ -107,30 +119,39 @@ pt6 = ggplot(data, aes(x = year, y = Urban_Population), title = "Urban_Populatio
 
 gridExtra::grid.arrange(pt4, pt5, pt6, ncol= 1)
 ```
-
-## Linear Regression & Correlation
+  
+##  
+### \qquad From the above scatter plots, from 1990 to 2017, we can see there is no obvious flunctuation from GNI (mean), while the maximum fluctuates from 50,000 to 125,000; the electricity varies from 75% to 88%; and the urban population varies from 50% to 63%.  
+  
+## Linear Regression & Correlation  
+### Plot Urban Population vs. GNI per Capita.
 ```{r echo = F}
-#plot Urban Population vs. GNI per Capita.
 pt8 = ggplot(data, aes(x = GNI, y = Urban_Population)) + 
   geom_point(size = 1L, alpha = 0.5, colour = "#0c4c8a") + 
   geom_smooth(color= "darkred", size = 0.5) 
-
-# square root scale of GNI
-pt7 = ggplot(data) +
-  aes(x = GNI, y = Electricity) +
-  geom_point(size = 1L, colour = "#0c4c8a", alpha = 0.5) +
-  scale_x_continuous(trans = "sqrt") +
-  theme_minimal() + 
-  geom_smooth(color = "darkred", size = 0.5)
-
-gridExtra::grid.arrange(pt7, pt8, ncol= 1)
+pt8
 ```
   
 ##  
-### Plot Urban Population vs. GNI per Capita.
+### 
+\qquad From the above plot we can tell that there is no direct correlation between GNI and Urban Population. While the urban population keep increasing with GNI increasing from 0 to 30,000, and it decreases when GNI gets larger than 30,000 (less than 125,000).    
+  
+## Linear Regression & Correlation  
+### Plot Urban Population vs. GNI per Capita.  
 
 ```{r echo = F}
-ggplot(data, aes(x = GNI, y =Urban_Population)) + 
-  geom_point(size = 1L, alpha=0.5, colour = "#0c4c8a") + 
-  geom_smooth(color="darkred", size=0.5)  
-```
+#plot Electricity vs. GNI per Capita.
+pt9 = ggplot(data, aes(x = GNI, y = Electricity)) + 
+  geom_point(size = 1L, alpha = 0.5, colour = "#0c4c8a") + 
+  geom_smooth(color= "darkred", size = 0.5) 
+pt9
+```   
+  
+##  
+### \qquad From above plot we can tell that before the GNI reaches around 8,500 (Atlas $), the percent of the access of electricity keeps increasing rapidly, and when GNI surpasses around 17,000 (Atlas $), the access of electricity increases to 100% and remains stable.  
+  
+# Conclusion  
+  
+##  
+  
+\qquad Based on the plots and analysis of these three indicators, we can draw an initial conclusion that there is no clear linear regression relation between the GNI and urban population; while the access to electricity does correlated with the GNI, though the maximum access of electricity is 100%, there is a significant level of linear relationship between GNI and Electricity (in spite of the boundedness of the scale of electricity).
